@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Chat Room</title>
+    <style>
+        #chatSection {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="homeScreen">
+        <h1>Welcome to the Home Page</h1>
+        <p id="welcomeMessage"></p>
+        <button onclick="showSignup()">Sign Up</button>
+        <button onclick="showLogin()">Login</button>
+    </div>
+
+    <div id="loginSection" style="display: none;">
+        <h1>Login</h1>
+        <input type="text" id="loginUsernameInput" placeholder="Enter your Username">
+        <input type="password" id="loginPasswordInput" placeholder="Enter your Password">
+        <button onclick="login()">Login</button>
+        <button onclick="showHome()">Back to Home</button>
+        <p id="loginMessage"></p>
+    </div>
+
+    <div id="signupSection" style="display: none;">
+        <h1>Sign Up</h1>
+        <input type="text" id="signupUsernameInput" placeholder="Enter a Username">
+        <input type="password" id="signupPasswordInput" placeholder="Enter a Password">
+        <button onclick="signup()">Sign Up</button>
+        <button onclick="showHome()">Back to Home</button>
+        <p id="signupMessage"></p>
+    </div>
+    <div id="chatSection">
+        <h1>Private Chat Room</h1>
+        <select id="recipientSelect" onchange="selectRecipient()"></select>
+        <div id="chatMessages"></div>
+        <input type="text" id="messageInput" placeholder="Type your message...">
+        <button onclick="sendMessage()">Send</button>
+        <button onclick="showHome()">Back to Home</button>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let selectedRecipient = null;
+        let registeredUsers = {};
+
+        // Load chat history from localStorage
+        registeredUsers = JSON.parse(localStorage.getItem('registeredUsers')) || {};
+
+
+	function selectRecipient() {
+            selectedRecipient = document.getElementById("recipientSelect").value;
+            displayChatHistory();
+        }
+
+        // Function to send a message
+        function sendMessage() {
+            const messageInput = document.getElementById("messageInput");
+            const message = messageInput.value;
+
+            if (message && selectedRecipient && registeredUsers[selectedRecipient]) {
+                if (!registeredUsers[selectedRecipient].messages) {
+                    registeredUsers[selectedRecipient].messages = [];
+                }
+
+                registeredUsers[selectedRecipient].messages.push({
+                    sender: currentUser,
+                    message: message
+                });
+
+                // Save chat history to localStorage
+                localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+
+                displayChatHistory();
+                messageInput.value = "";
+            }
+        }
+
+        // Function to display chat history
+        function displayChatHistory() {
+            const chatMessages = document.getElementById("chatMessages");
+            chatMessages.innerHTML = "";
+
+            if (registeredUsers[selectedRecipient] && registeredUsers[selectedRecipient].messages) {
+                registeredUsers[selectedRecipient].messages.forEach(messageObj => {
+                    const messageElement = document.createElement("p");
+                    messageElement.textContent = `${messageObj.sender}: ${messageObj.message}`;
+                    chatMessages.appendChild(messageElement);
+                });
+            }
+        }
+
+        function populateRecipientSelect() {
+            const recipientSelect = document.getElementById("recipientSelect");
+            recipientSelect.innerHTML = "";
+
+            // Populate the dropdown with usernames of registered users
+            for (const username in registeredUsers) {
+                if (username !== currentUser) {
+                    const option = document.createElement("option");
+                    option.value = username;
+                    option.textContent = username;
+                    recipientSelect.appendChild(option);
+                }
+            }
+        }
+
+        function showChat() {
+            document.getElementById("homeScreen").style.display = "none";
+            document.getElementById("loginSection").style.display = "none";
+            document.getElementById("signupSection").style.display = "none";
+            document.getElementById("chatSection").style.display = "block";
+            populateRecipientSelect();
+            displayChatHistory();
+        }
+function showSignup() {
+            document.getElementById("homeScreen").style.display = "none";
+            document.getElementById("loginSection").style.display = "none";
+            document.getElementById("chatSection").style.display = "none";
+            document.getElementById("signupSection").style.display = "block";
+        }
+
+        function showLogin() {
+            document.getElementById("homeScreen").style.display = "none";
+            document.getElementById("signupSection").style.display = "none";
+            document.getElementById("chatSection").style.display = "none";
+            document.getElementById("loginSection").style.display = "block";
+        }
+
+        function showHome() {
+            document.getElementById("loginSection").style.display = "none";
+            document.getElementById("signupSection").style.display = "none";
+            document.getElementById("chatSection").style.display = "none";
+            document.getElementById("homeScreen").style.display = "block";
+        }
+
+
+        function login() {
+            const username = document.getElementById("loginUsernameInput").value;
+            const password = document.getElementById("loginPasswordInput").value;
+
+            // Check for empty fields
+            if (!username || !password) {
+                document.getElementById("loginMessage").textContent = "Please enter both username and password.";
+                return;
+            }
+
+            if (!registeredUsers[username]) {
+                document.getElementById("loginMessage").textContent = `Username '${username}' not found. Please sign up or check your credentials.`;
+                return;
+            }
+
+            if (registeredUsers[username].password !== password) {
+                document.getElementById("loginMessage").textContent = "Incorrect password. Please try again.";
+                return;
+            }
+
+            showChat();
+        }
+
+	function signup() {
+    		const username = document.getElementById("signupUsernameInput").value;
+    		const password = document.getElementById("signupPasswordInput").value;
+    		const signupMessage = document.getElementById("signupMessage");
+
+    		// Reset signup message
+    		signupMessage.textContent = "";
+
+    		// Check for empty fields
+    		if (!username || !password) {
+        		signupMessage.textContent = "Please enter both username and password.";
+        		return;
+   		}
+
+    		if (registeredUsers[username]) {
+        		signupMessage.textContent = `Username '${username}' has already been taken. Try again`;
+        		return;
+    		}
+
+    		// Store the new user in registeredUsers
+    		registeredUsers[username] = { password: password, messages: [] };
+
+    		// Save the updated registeredUsers to localStorge
+    		localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+
+    		showChat();
+	}
+        function initChat() {
+            // Set current user (you might retrieve this from user authentication)
+            currentUser = "YourUsername";
+
+            // Populate recipient dropdown and display initial chat history
+            populateRecipientSelect();
+            selectRecipient();
+        }
+
+        // Call the initChat function when the page loads
+        window.onload = initChat;
+    </script>
+</body>
+
+</html>
